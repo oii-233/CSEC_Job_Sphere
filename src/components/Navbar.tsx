@@ -18,11 +18,8 @@ export default function Navbar() {
     <nav className="bg-white border-b border-gray-100 py-4 px-6 flex items-center justify-between sticky top-0 z-50">
       <div className="flex items-center gap-12">
         <Link to="/" className="flex items-center gap-2">
-          <div className="bg-blue-700 text-white p-1.5 rounded-md font-bold text-sm flex items-center gap-1">
-            <div className="bg-white w-4 h-4 rounded-sm flex items-center justify-center">
-              <div className="bg-blue-700 w-2 h-2 rounded-full"></div>
-            </div>
-            JOBSPHERE
+          <div className="bg-blue-700 p-2 rounded-lg">
+            <img src="/logo.png" alt="JOBSPHERE Logo" className="h-7 w-auto" />
           </div>
         </Link>
 
@@ -31,11 +28,10 @@ export default function Navbar() {
             <Link
               key={item.name}
               to={item.path}
-              className={`text-sm font-medium transition-colors ${
-                location.pathname === item.path
-                  ? 'text-blue-600 border-b-2 border-blue-600 pb-1'
-                  : 'text-gray-600 hover:text-blue-600'
-              }`}
+              className={`text-sm font-medium transition-colors ${location.pathname === item.path
+                  ? 'text-blue-700 border-b-2 border-blue-700 pb-1'
+                  : 'text-gray-600 hover:text-blue-700'
+                }`}
             >
               {item.name}
             </Link>
@@ -46,10 +42,10 @@ export default function Navbar() {
       <div className="flex items-center gap-4">
         {isAuthenticated ? (
           <div className="flex items-center gap-4">
-            <button className="text-gray-500 hover:text-blue-600">
+            <button className="text-gray-500 hover:text-blue-700">
               <Bell size={20} />
             </button>
-            <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden border border-gray-300">
+            <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden border border-gray-200">
               <User size={20} className="text-gray-500" />
             </div>
           </div>

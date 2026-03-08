@@ -52,9 +52,9 @@ export default function HomePage() {
             <div className="relative w-[500px] h-[500px]">
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[450px] h-[450px] bg-white/10 rounded-full blur-3xl"></div>
               <img
-                src=".hero.png"
+                src="/hero.png"
                 alt="Professional Character"
-                className="w-full h-full object-contain relative z-10 drop-shadow-2xl"
+                className="w-full h-full object-contain relative z-10 drop-shadow-2xl translate-y-6"
                 referrerPolicy="no-referrer"
               />
             </div>
