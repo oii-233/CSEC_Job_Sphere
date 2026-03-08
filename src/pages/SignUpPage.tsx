@@ -98,17 +98,17 @@ export default function SignUpPage() {
 
             <div className="grid grid-cols-4 gap-4">
               {[
-                { icon: Chrome, color: 'text-[#EA4335]' },
-                { icon: Apple, color: 'text-black' },
-                { icon: Facebook, color: 'text-[#1877F2]' },
-                { icon: Linkedin, color: 'text-[#0077B5]' },
+                { name: 'Google', src: 'https://www.gstatic.com/images/branding/product/1x/googleg_48dp.png' },
+                { name: 'Apple', src: 'https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg' },
+                { name: 'Facebook', src: 'https://upload.wikimedia.org/wikipedia/commons/b/b8/2021_Facebook_icon.svg' },
+                { name: 'LinkedIn', src: 'https://upload.wikimedia.org/wikipedia/commons/c/ca/LinkedIn_logo_initials.png' },
               ].map((social, i) => (
                 <button
                   key={i}
                   type="button"
-                  className="flex items-center justify-center p-3.5 border border-gray-200 rounded-lg hover:bg-gray-50 transition-all shadow-sm active:scale-95"
+                  className="flex items-center justify-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-all shadow-sm active:scale-95 bg-white"
                 >
-                  <social.icon size={24} className={social.color} />
+                  <img src={social.src} alt={`${social.name} Logo`} className="h-6 w-6 object-contain" />
                 </button>
               ))}
             </div>
