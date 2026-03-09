@@ -1,17 +1,21 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../store';
-import { ArrowLeft, Bookmark, Share2, Star, MapPin, Briefcase, Clock, Users } from 'lucide-react';
+import { ArrowLeft, Bookmark, Share2, Star, MapPin, Search } from 'lucide-react';
 import Navbar from '../components/Navbar';
-import { saveJob, unsaveJob } from '../features/jobs/jobsSlice';
+import { saveJob, unsaveJob, setFilters } from '../features/jobs/jobsSlice';
 import { motion } from 'motion/react';
+import { useState } from 'react';
 
 export default function JobDetailsPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { jobs, savedJobs } = useSelector((state: RootState) => state.jobs);
+  const { jobs, savedJobs, filters } = useSelector((state: RootState) => state.jobs);
   
+  const [searchQuery, setSearchQuery] = useState(filters.searchQuery);
+  const [locationQuery, setLocationQuery] = useState(filters.locationQuery);
+
   const job = jobs.find((j) => j.id === id) || jobs[0];
   const isSaved = savedJobs.some((j) => j.id === job.id);
   const relatedJobs = jobs.filter((j) => j.id !== job.id).slice(0, 4);
@@ -24,115 +28,158 @@ export default function JobDetailsPage() {
     }
   };
 
+  const handleSearch = () => {
+    dispatch(setFilters({ searchQuery, locationQuery }));
+    navigate('/');
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50/50">
+    <div className="min-h-screen bg-transparent">
       <Navbar />
       
-      <main className="container mx-auto py-12 px-6">
-        <button
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-gray-500 hover:text-blue-600 font-medium mb-8 transition-colors"
-        >
-          <ArrowLeft size={20} />
-          Back
-        </button>
+      <main className="container mx-auto py-8 px-6 max-w-7xl">
+        {/* Top Header with Back and Search */}
+        <div className="flex flex-col md:flex-row items-center gap-8 mb-10">
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 text-gray-800 hover:text-blue-600 font-bold transition-colors text-lg"
+          >
+            <ArrowLeft size={24} />
+            Back
+          </button>
+
+          <div className="flex-1 bg-white p-2 rounded-full shadow-md border border-gray-100 flex items-center gap-2 w-full">
+            <div className="flex-1 flex items-center gap-3 px-4">
+              <Search size={18} className="text-gray-400" />
+              <input
+                type="text"
+                placeholder="Job title, Keywords, or Company name"
+                className="w-full bg-transparent text-sm text-gray-700 focus:outline-none placeholder:text-gray-400"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              />
+            </div>
+            <div className="w-px h-6 bg-gray-200"></div>
+            <div className="flex-1 flex items-center gap-3 px-4">
+              <MapPin size={18} className="text-gray-400" />
+              <input
+                type="text"
+                placeholder="Location"
+                className="w-full bg-transparent text-sm text-gray-700 focus:outline-none placeholder:text-gray-400"
+                value={locationQuery}
+                onChange={(e) => setLocationQuery(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              />
+            </div>
+            <button 
+              onClick={handleSearch}
+              className="px-8 py-2.5 bg-blue-700 text-white text-sm font-bold rounded-full hover:bg-blue-800 transition-colors"
+            >
+              Search
+            </button>
+          </div>
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Main Job Info */}
-          <div className="lg:col-span-8 bg-white p-8 rounded-2xl border border-gray-100 shadow-sm">
-            <div className="flex flex-col md:flex-row items-start justify-between gap-6 mb-10">
-              <div className="flex items-center gap-6">
-                <div className="w-20 h-20 rounded-2xl bg-gray-50 border border-gray-100 p-4 flex items-center justify-center overflow-hidden">
-                  <img
-                    src={job.logo}
-                    alt={job.company}
-                    className="w-full h-full object-contain"
-                    referrerPolicy="no-referrer"
-                  />
-                </div>
-                <div>
-                  <h1 className="text-3xl font-bold text-gray-900 mb-2">{job.title}</h1>
-                  <div className="flex items-center gap-3">
-                    <span className="text-lg font-medium text-gray-600">{job.company}</span>
-                    <div className="flex items-center gap-1 text-yellow-400">
-                      {[...Array(5)].map((_, i) => (
-                        <Star
-                          key={i}
-                          size={16}
-                          fill={i < Math.floor(job.rating) ? 'currentColor' : 'none'}
-                          className={i < Math.floor(job.rating) ? 'text-yellow-400' : 'text-gray-200'}
-                        />
-                      ))}
-                    </div>
+          {/* Main Job Card */}
+          <div className="lg:col-span-9 bg-white p-10 rounded-[32px] border border-gray-100 shadow-xl relative overflow-hidden">
+            {/* Header section with icons */}
+            <div className="absolute top-8 right-8 flex items-center gap-3">
+              <button
+                onClick={handleSave}
+                className="p-2 text-gray-600 hover:text-blue-600 transition-colors"
+              >
+                <Bookmark size={24} fill={isSaved ? 'currentColor' : 'none'} />
+              </button>
+              <button className="p-2 text-gray-600 hover:text-blue-600 transition-colors">
+                <Share2 size={24} />
+              </button>
+            </div>
+
+            <div className="flex items-start gap-8 mb-12">
+              <div className="w-24 h-24 rounded-3xl bg-white p-0 flex items-center justify-center overflow-hidden">
+                <img
+                  src={job.logo}
+                  alt={job.company}
+                  className="w-full h-full object-contain"
+                  referrerPolicy="no-referrer"
+                />
+              </div>
+              <div className="flex-1 pt-2">
+                <h1 className="text-4xl font-bold text-gray-900 mb-2">{job.title}</h1>
+                <div className="flex items-center gap-3">
+                  <span className="text-xl font-medium text-gray-600">{job.company}</span>
+                  <div className="flex items-center gap-1 text-yellow-400">
+                    {[...Array(5)].map((_, i) => (
+                      <Star
+                        key={i}
+                        size={18}
+                        fill={i < Math.floor(job.rating) ? 'currentColor' : 'none'}
+                        className={i < Math.floor(job.rating) ? 'text-yellow-400' : 'text-gray-200'}
+                      />
+                    ))}
                   </div>
                 </div>
               </div>
-              
-              <div className="flex items-center gap-4 w-full md:w-auto">
-                <button
-                  onClick={handleSave}
-                  className={`p-3 rounded-xl border transition-all ${
-                    isSaved ? 'text-blue-600 bg-blue-50 border-blue-200' : 'text-gray-400 border-gray-200 hover:bg-gray-50'
-                  }`}
-                >
-                  <Bookmark size={24} fill={isSaved ? 'currentColor' : 'none'} />
-                </button>
-                <button className="p-3 rounded-xl border border-gray-200 text-gray-400 hover:bg-gray-50 transition-all">
-                  <Share2 size={24} />
-                </button>
-                <button className="flex-1 md:flex-none px-10 py-3.5 bg-blue-700 text-white font-bold rounded-xl hover:bg-blue-800 transition-colors shadow-lg shadow-blue-700/20">
+              <div className="pt-2">
+                <button className="px-12 py-3.5 bg-blue-700 text-white font-bold rounded-xl hover:bg-blue-800 transition-colors shadow-lg shadow-blue-700/20 text-lg">
                   Apply now
                 </button>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12 py-8 border-y border-gray-50">
-              <div className="flex flex-col gap-1">
-                <span className="text-sm font-bold text-gray-900">Job type:</span>
-                <span className="text-sm text-gray-500">{job.type}</span>
+            <div className="flex flex-col lg:flex-row gap-12">
+              {/* Left Column - Metadata */}
+              <div className="lg:w-48 flex-shrink-0 space-y-8">
+                <div className="flex flex-col gap-2">
+                  <span className="text-lg font-bold text-gray-900">Job type:</span>
+                  <span className="text-lg text-gray-600">{job.type}</span>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <span className="text-lg font-bold text-gray-900">Location:</span>
+                  <span className="text-lg text-gray-600">{job.location}</span>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <span className="text-lg font-bold text-gray-900">Experience:</span>
+                  <span className="text-lg text-gray-600">{job.experience}</span>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <span className="text-lg font-bold text-gray-900">Number of Applicants:</span>
+                  <span className="text-lg text-gray-600">{job.applicants}</span>
+                </div>
               </div>
-              <div className="flex flex-col gap-1">
-                <span className="text-sm font-bold text-gray-900">Location:</span>
-                <span className="text-sm text-gray-500">{job.location}</span>
-              </div>
-              <div className="flex flex-col gap-1">
-                <span className="text-sm font-bold text-gray-900">Experience:</span>
-                <span className="text-sm text-gray-500">{job.experience}</span>
-              </div>
-              <div className="flex flex-col gap-1">
-                <span className="text-sm font-bold text-gray-900">Number of Applicants:</span>
-                <span className="text-sm text-gray-500">{job.applicants}</span>
-              </div>
-            </div>
 
-            <div className="space-y-10">
-              <section>
-                <h2 className="text-xl font-bold text-gray-900 mb-4">Job description</h2>
-                <p className="text-gray-500 leading-relaxed">
-                  {job.description}
-                </p>
-                <p className="text-gray-500 leading-relaxed mt-4">
-                  If you are passionate about creating top-notch digital experiences and have a keen eye for design, we would love to have you on board!
-                </p>
-              </section>
+              {/* Right Column - Description & Responsibilities */}
+              <div className="flex-1 space-y-12">
+                <section>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-6">Job description</h2>
+                  <div className="text-gray-600 leading-relaxed text-lg space-y-4">
+                    <p>{job.description}</p>
+                    <p>
+                      If you are passionate about creating top-notch digital experiences and have a keen eye for design, we would love to have you on board!
+                    </p>
+                  </div>
+                </section>
 
-              <section>
-                <h2 className="text-xl font-bold text-gray-900 mb-4">Key Responsibilities</h2>
-                <ul className="space-y-3">
-                  {job.responsibilities.map((resp, index) => (
-                    <li key={index} className="flex items-start gap-3 text-gray-500">
-                      <div className="w-1.5 h-1.5 rounded-full bg-blue-600 mt-2 flex-shrink-0"></div>
-                      <span className="leading-relaxed">{resp}</span>
-                    </li>
-                  ))}
-                </ul>
-              </section>
+                <section>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-6">Key Responsibilities</h2>
+                  <ul className="space-y-4">
+                    {job.responsibilities.map((resp, index) => (
+                      <li key={index} className="flex items-start gap-4 text-gray-600 text-lg">
+                        <div className="w-2 h-2 rounded-full bg-gray-900 mt-2.5 flex-shrink-0"></div>
+                        <span className="leading-relaxed">{resp}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              </div>
             </div>
           </div>
 
           {/* Related Jobs */}
-          <aside className="lg:col-span-4 space-y-8">
-            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+          <aside className="lg:col-span-3 space-y-8">
+            <div className="bg-white p-6 rounded-[24px] border border-gray-100 shadow-sm">
               <h2 className="text-lg font-bold text-gray-900 mb-6">Related Jobs</h2>
               <div className="space-y-4">
                 {relatedJobs.map((rj) => (
@@ -155,7 +202,7 @@ export default function JobDetailsPage() {
                           {rj.title}
                         </h3>
                         <p className="text-[10px] text-gray-400 font-medium">{rj.company}</p>
-                        <p className="text-[10px] text-gray-400 font-medium">Remote | {rj.salary}</p>
+                        <p className="text-[10px] text-gray-400 font-medium">Remote | <span className="text-blue-600 font-bold">{rj.salary}</span></p>
                       </div>
                     </div>
                     <button className="text-gray-300 hover:text-red-500 transition-colors">

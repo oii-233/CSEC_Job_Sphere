@@ -1,6 +1,8 @@
 import { Search, MapPin } from 'lucide-react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../store';
+import { setFilters } from '../features/jobs/jobsSlice';
+import { useState } from 'react';
 import JobCard from '../components/JobCard';
 import FilterSidebar from '../components/FilterSidebar';
 import SavedJobs from '../components/SavedJobs';
@@ -8,7 +10,26 @@ import Navbar from '../components/Navbar';
 import { motion } from 'motion/react';
 
 export default function HomePage() {
-  const { jobs } = useSelector((state: RootState) => state.jobs);
+  const dispatch = useDispatch();
+  const { jobs, filters } = useSelector((state: RootState) => state.jobs);
+  
+  const [searchQuery, setSearchQuery] = useState(filters.searchQuery);
+  const [locationQuery, setLocationQuery] = useState(filters.locationQuery);
+
+  const handleSearch = () => {
+    dispatch(setFilters({ searchQuery, locationQuery }));
+  };
+
+  const filteredJobs = jobs.filter(job => {
+    const matchesSearch = job.title.toLowerCase().includes(filters.searchQuery.toLowerCase()) ||
+                         job.company.toLowerCase().includes(filters.searchQuery.toLowerCase());
+    const matchesLocation = job.location.toLowerCase().includes(filters.locationQuery.toLowerCase());
+    
+    // Simple filter matching for other filters if needed
+    const matchesType = filters.type.length === 0 || filters.type.includes(job.type);
+    
+    return matchesSearch && matchesLocation && matchesType;
+  });
 
   return (
     <div className="min-h-screen bg-gray-50/30">
@@ -81,6 +102,9 @@ export default function HomePage() {
                   type="text"
                   placeholder="Job title, Keywords, or Company name"
                   className="w-full bg-transparent text-sm text-gray-700 focus:outline-none placeholder:text-gray-400"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                 />
               </div>
               <div className="w-px h-6 bg-gray-200"></div>
@@ -90,17 +114,29 @@ export default function HomePage() {
                   type="text"
                   placeholder="Location"
                   className="w-full bg-transparent text-sm text-gray-700 focus:outline-none placeholder:text-gray-400"
+                  value={locationQuery}
+                  onChange={(e) => setLocationQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                 />
               </div>
-              <button className="px-8 py-2.5 bg-blue-700 text-white text-sm font-bold rounded-full hover:bg-blue-800 transition-colors">
+              <button 
+                onClick={handleSearch}
+                className="px-8 py-2.5 bg-blue-700 text-white text-sm font-bold rounded-full hover:bg-blue-800 transition-colors"
+              >
                 Search
               </button>
             </div>
 
             <div className="space-y-6">
-              {jobs.map((job) => (
-                <JobCard key={job.id} job={job} />
-              ))}
+              {filteredJobs.length > 0 ? (
+                filteredJobs.map((job) => (
+                  <JobCard key={job.id} job={job} />
+                ))
+              ) : (
+                <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-gray-200">
+                  <p className="text-gray-500">No jobs found matching your criteria.</p>
+                </div>
+              )}
             </div>
           </section>
 

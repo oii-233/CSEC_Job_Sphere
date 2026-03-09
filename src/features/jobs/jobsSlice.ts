@@ -13,6 +13,7 @@ export interface Job {
   applicants: number;
   experience: string;
   rating: number;
+  isBookMarked?: boolean;
 }
 
 interface JobsState {
@@ -24,6 +25,8 @@ interface JobsState {
     location: string;
     experience: string;
     salaryRange: [number, number];
+    searchQuery: string;
+    locationQuery: string;
   };
 }
 
@@ -91,6 +94,25 @@ const initialState: JobsState = {
       applicants: 10,
       experience: '4years',
       rating: 4.3
+    },
+    {
+      id: '5',
+      title: 'Software Engineer',
+      company: 'Google',
+      logo: 'https://logo.clearbit.com/google.com',
+      location: 'San Francisco, USA',
+      type: 'Full-time',
+      salary: '$95,000',
+      description: 'Develop and maintain web applications.',
+      responsibilities: [
+        'Collaborate with cross-functional teams to define, design, and ship new features.',
+        'Unit-test code for robustness, including edge cases, usability, and general reliability.',
+        'Work on bug fixing and improving application performance.'
+      ],
+      applicants: 156,
+      experience: 'Mid Level',
+      rating: 4.9,
+      isBookMarked: true
     }
   ],
   savedJobs: [],
@@ -99,7 +121,9 @@ const initialState: JobsState = {
     type: [],
     location: '',
     experience: '',
-    salaryRange: [0, 1500],
+    salaryRange: [0, 5000],
+    searchQuery: '',
+    locationQuery: '',
   },
 };
 
