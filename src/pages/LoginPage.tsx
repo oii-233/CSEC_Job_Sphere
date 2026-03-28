@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock } from 'lucide-react';
 import { useDispatch } from 'react-redux';
@@ -9,11 +9,48 @@ export default function LoginPage() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate login
-    dispatch(login({ id: '1', email: 'user@example.com', firstName: 'John', lastName: 'Doe' }));
-    navigate('/');
+    setError('');
+    setLoading(true);
+
+    try {
+      const res = await fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || data.message || 'Login failed');
+      }
+
+      const [firstName, ...lastNameParts] = (data.user.name || '').split(' ');
+      const lastName = lastNameParts.join(' ');
+
+      dispatch(login({
+        id: data.user.id,
+        email: data.user.email,
+        firstName: firstName || data.user.name,
+        lastName: lastName || '',
+      }));
+      
+      localStorage.setItem('token', data.token);
+      navigate('/');
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -48,12 +85,16 @@ export default function LoginPage() {
           </div>
 
           <form onSubmit={handleLogin} className="space-y-5">
+            {error && <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm">{error}</div>}
+
             <div className="relative">
               <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
               <input
                 type="email"
                 placeholder="Email"
                 required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className="w-full pl-12 pr-4 py-3.5 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all placeholder:text-gray-400"
               />
             </div>
@@ -64,6 +105,8 @@ export default function LoginPage() {
                 type="password"
                 placeholder="Password"
                 required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 className="w-full pl-12 pr-4 py-3.5 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all placeholder:text-gray-400"
               />
             </div>

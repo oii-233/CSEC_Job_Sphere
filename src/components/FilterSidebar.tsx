@@ -39,10 +39,15 @@ export default function FilterSidebar() {
       <div className="space-y-6">
         <div>
           <h3 className="text-sm font-bold text-gray-900 mb-4">Date Posted</h3>
-          <select className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <option>Last 24 Hours</option>
-            <option>Last 7 Days</option>
-            <option>Last 30 Days</option>
+          <select 
+            className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={filters.datePosted || ''}
+            onChange={(e) => dispatch(setFilters({ datePosted: e.target.value }))}
+          >
+            <option value="">Any Time</option>
+            <option value="Last 24 Hours">Last 24 Hours</option>
+            <option value="Last 7 Days">Last 7 Days</option>
+            <option value="Last 30 Days">Last 30 Days</option>
           </select>
         </div>
 
@@ -135,7 +140,10 @@ export default function FilterSidebar() {
           </select>
         </div>
 
-        <button className="w-full py-3 bg-blue-700 text-white font-bold rounded-xl hover:bg-blue-800 transition-colors shadow-lg shadow-blue-700/20">
+        <button 
+          onClick={() => dispatch(resetFilters())}
+          className="w-full py-3 bg-blue-700 text-white font-bold rounded-xl hover:bg-blue-800 transition-colors shadow-lg shadow-blue-700/20"
+        >
           Reset all filter
         </button>
       </div>

@@ -1,4 +1,4 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
 
 export interface Job {
   id: string;
@@ -14,12 +14,15 @@ export interface Job {
   experience: string;
   rating: number;
   isBookMarked?: boolean;
+  publicationDate?: string;
 }
 
 interface JobsState {
   jobs: Job[];
   savedJobs: Job[];
   selectedJob: Job | null;
+  status: 'idle' | 'loading' | 'succeeded' | 'failed';
+  error: string | null;
   filters: {
     type: string[];
     location: string;
@@ -27,96 +30,65 @@ interface JobsState {
     salaryRange: [number, number];
     searchQuery: string;
     locationQuery: string;
+    datePosted: string;
   };
 }
 
-const initialState: JobsState = {
-  jobs: [
-    {
-      id: '1',
-      title: 'Product Design',
-      company: 'Amazon',
-      logo: 'https://picsum.photos/seed/amazon/100/100',
-      location: 'Lagos (On-site)',
-      type: 'Full-time',
-      salary: '$200 - $1,200',
-      description: 'We are seeking a highly skilled and creative Senior UI/UX Designer to join our dynamic team in Lagos. As a Senior UI/UX Designer, you will play a crucial role in designing intuitive and engaging user interfaces and enhancing user experience across various digital platforms.',
-      responsibilities: [
-        'Design and develop user-centric interfaces for web and mobile applications.',
-        'Conduct user research, usability testing, and gather feedback to improve designs.',
-        'Create wireframes, prototypes, and high-fidelity designs using design tools like Figma, Adobe XD, or Sketch.',
-        'Collaborate with product managers and developers to ensure design consistency and feasibility.',
-        'Stay updated with the latest UI/UX trends and best practices to ensure optimal user experience.',
-        'Lead and mentor junior designers in the team, providing guidance and feedback.'
-      ],
-      applicants: 40,
-      experience: '5years',
-      rating: 4.5
-    },
-    {
-      id: '2',
-      title: 'Frontend Developer',
-      company: 'Abstergo Ltd.',
-      logo: 'https://picsum.photos/seed/abstergo/100/100',
-      location: 'Remote',
-      type: 'Full-time',
-      salary: '$200 - $1,200',
-      description: 'Develop and maintain high-quality web applications using React and TypeScript.',
-      responsibilities: [],
-      applicants: 25,
-      experience: '3years',
-      rating: 4.2
-    },
-    {
-      id: '3',
-      title: 'Digital Marketing Specialist',
-      company: 'Sushi shop',
-      logo: 'https://picsum.photos/seed/sushi/100/100',
-      location: 'Remote',
-      type: 'Full-time',
-      salary: '$250 - $1,250',
-      description: 'Create and execute digital marketing campaigns to drive traffic and increase brand awareness.',
-      responsibilities: [],
-      applicants: 15,
-      experience: '2years',
-      rating: 4.0
-    },
-    {
-      id: '4',
-      title: 'Data Analyst',
-      company: 'GreenVita',
-      logo: 'https://picsum.photos/seed/greenvita/100/100',
-      location: 'Remote',
-      type: 'Full-time',
-      salary: '$300 - $1,500',
-      description: 'Analyze data to provide insights and support decision-making processes.',
-      responsibilities: [],
-      applicants: 10,
-      experience: '4years',
-      rating: 4.3
-    },
-    {
-      id: '5',
-      title: 'Software Engineer',
-      company: 'Google',
-      logo: 'https://logo.clearbit.com/google.com',
-      location: 'San Francisco, USA',
-      type: 'Full-time',
-      salary: '$95,000',
-      description: 'Develop and maintain web applications.',
-      responsibilities: [
-        'Collaborate with cross-functional teams to define, design, and ship new features.',
-        'Unit-test code for robustness, including edge cases, usability, and general reliability.',
-        'Work on bug fixing and improving application performance.'
-      ],
-      applicants: 156,
-      experience: 'Mid Level',
-      rating: 4.9,
-      isBookMarked: true
+export const fetchJobs = createAsyncThunk('jobs/fetchJobs', async (page: number = 1) => {
+  const response = await fetch(`https://www.themuse.com/api/public/jobs?page=${page}`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch jobs');
+  }
+  const data = await response.json();
+  
+  // Map The Muse API format to our Job interface
+  const mappedJobs: Job[] = data.results.map((job: any) => {
+    // Determine location
+    const locationName = job.locations && job.locations.length > 0 
+      ? job.locations[0].name 
+      : 'Remote';
+      
+    // Determine experience/level
+    const levelName = job.levels && job.levels.length > 0 
+      ? job.levels[0].name 
+      : 'Entry Level';
+
+    // Strip basic HTML from Muse job contents for description snippet
+    let cleanDescription = 'No description available.';
+    if (job.contents) {
+        // Simple HTML stripping
+        cleanDescription = job.contents.replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim();
+        if (cleanDescription.length > 300) {
+            cleanDescription = cleanDescription.substring(0, 300) + '...';
+        }
     }
-  ],
+
+    return {
+      id: String(job.id),
+      title: job.name,
+      company: job.company?.name || 'Unknown Company',
+      logo: `https://ui-avatars.com/api/?name=${encodeURIComponent(job.company?.name || 'U')}&background=random`,
+      location: locationName,
+      type: 'Full-time', // The Muse doesn't reliably provide Type at top level
+      salary: 'Competitive', 
+      description: cleanDescription,
+      responsibilities: [],
+      applicants: Math.floor(Math.random() * 100) + 10, // Simulated fallback
+      experience: levelName,
+      rating: +(Math.random() * 2 + 3).toFixed(1), // Simulated 3.0 to 5.0
+      publicationDate: job.publication_date || new Date().toISOString(),
+    };
+  });
+
+  return mappedJobs;
+});
+
+const initialState: JobsState = {
+  jobs: [],
   savedJobs: [],
   selectedJob: null,
+  status: 'idle',
+  error: null,
   filters: {
     type: [],
     location: '',
@@ -124,6 +96,7 @@ const initialState: JobsState = {
     salaryRange: [0, 5000],
     searchQuery: '',
     locationQuery: '',
+    datePosted: '',
   },
 };
 
@@ -151,6 +124,20 @@ const jobsSlice = createSlice({
     resetFilters: (state) => {
       state.filters = initialState.filters;
     },
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchJobs.pending, (state) => {
+        state.status = 'loading';
+      })
+      .addCase(fetchJobs.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+        state.jobs = action.payload;
+      })
+      .addCase(fetchJobs.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.error.message || 'Failed to fetch jobs';
+      });
   },
 });
 

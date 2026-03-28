@@ -1,8 +1,9 @@
 import { Search, MapPin } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../store';
-import { setFilters } from '../features/jobs/jobsSlice';
-import { useState } from 'react';
+import { setFilters, fetchJobs } from '../features/jobs/jobsSlice';
+import { useState, useEffect } from 'react';
+import useDebounce from '../hooks/useDebounce';
 import JobCard from '../components/JobCard';
 import FilterSidebar from '../components/FilterSidebar';
 import SavedJobs from '../components/SavedJobs';
@@ -11,10 +12,26 @@ import { motion } from 'motion/react';
 
 export default function HomePage() {
   const dispatch = useDispatch();
-  const { jobs, filters } = useSelector((state: RootState) => state.jobs);
+  const { jobs, filters, status, error } = useSelector((state: RootState) => state.jobs);
   
   const [searchQuery, setSearchQuery] = useState(filters.searchQuery);
   const [locationQuery, setLocationQuery] = useState(filters.locationQuery);
+
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
+  const debouncedLocationQuery = useDebounce(locationQuery, 300);
+
+  useEffect(() => {
+    if (status === 'idle') {
+      dispatch(fetchJobs(1) as any);
+    }
+  }, [status, dispatch]);
+
+  useEffect(() => {
+    dispatch(setFilters({ 
+      searchQuery: debouncedSearchQuery, 
+      locationQuery: debouncedLocationQuery 
+    }));
+  }, [debouncedSearchQuery, debouncedLocationQuery, dispatch]);
 
   const handleSearch = () => {
     dispatch(setFilters({ searchQuery, locationQuery }));
@@ -25,10 +42,27 @@ export default function HomePage() {
                          job.company.toLowerCase().includes(filters.searchQuery.toLowerCase());
     const matchesLocation = job.location.toLowerCase().includes(filters.locationQuery.toLowerCase());
     
-    // Simple filter matching for other filters if needed
-    const matchesType = filters.type.length === 0 || filters.type.includes(job.type);
+    // Type and location based tags filter matching
+    const matchesType = filters.type.length === 0 || filters.type.some(t => {
+      if (t === 'Remote') return job.location.toLowerCase().includes('remote');
+      if (t === 'On-Site') return !job.location.toLowerCase().includes('remote') && !job.location.toLowerCase().includes('hybrid');
+      if (t === 'Hybrid') return job.location.toLowerCase().includes('hybrid');
+      return job.type.toLowerCase().includes(t.toLowerCase()) || job.title.toLowerCase().includes(t.toLowerCase());
+    });
+
+    // Date Posted logic
+    let matchesDate = true;
+    if (filters.datePosted && job.publicationDate) {
+      const pubDate = new Date(job.publicationDate).getTime();
+      const now = new Date().getTime();
+      const diffHours = (now - pubDate) / (1000 * 60 * 60);
+
+      if (filters.datePosted === 'Last 24 Hours') matchesDate = diffHours <= 24;
+      else if (filters.datePosted === 'Last 7 Days') matchesDate = diffHours <= 24 * 7;
+      else if (filters.datePosted === 'Last 30 Days') matchesDate = diffHours <= 24 * 30;
+    }
     
-    return matchesSearch && matchesLocation && matchesType;
+    return matchesSearch && matchesLocation && matchesType && matchesDate;
   });
 
   return (
@@ -128,7 +162,16 @@ export default function HomePage() {
             </div>
 
             <div className="space-y-6">
-              {filteredJobs.length > 0 ? (
+              {status === 'loading' ? (
+                <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-gray-200">
+                  <div className="inline-block w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+                  <p className="text-gray-500 font-medium">Loading amazing opportunities...</p>
+                </div>
+              ) : status === 'failed' ? (
+                <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-gray-200">
+                  <p className="text-red-500 font-medium">Failed to load jobs: {error}</p>
+                </div>
+              ) : filteredJobs.length > 0 ? (
                 filteredJobs.map((job) => (
                   <JobCard key={job.id} job={job} />
                 ))
